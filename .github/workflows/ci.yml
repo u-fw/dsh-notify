@@ -8,9 +8,19 @@ on:
   push:
   pull_request:
 
+  workflow_dispatch: {}
+
+# The job only checks out and tests, so the default token scope is wider than
+# needed; `contents: read` is the whole requirement.
+permissions:
+  contents: read
+
 jobs:
   check:
     runs-on: windows-latest
+    # Windows runners are the slowest queue and this job does a real
+    # `npm install`; bound it so a wedged step cannot hold the slot.
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
