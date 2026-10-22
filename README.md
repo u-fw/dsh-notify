@@ -1,5 +1,7 @@
 # dsh-notify
 
+English | [中文](README.zh.md)
+
 Windows 11 native toast notifications for DeepSeek Harness.
 
 Work keeps running while you are looking at something else. A turn that is
