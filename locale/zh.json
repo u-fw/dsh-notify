@@ -1,0 +1,4 @@
+{
+  "title": "DSH 通知",
+  "description": "DeepSeek Harness 需要你授权或回答、发生错误、回合跑完，或者长时间没有进展时，发送 Windows 11 原生通知。点击通知即可把 DSH 窗口切回前台。"
+}

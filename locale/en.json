@@ -1,0 +1,4 @@
+{
+  "title": "DSH Notify",
+  "description": "Windows 11 toast notifications when DeepSeek Harness needs an approval or an answer, hits an error, finishes a turn, or stops making progress. Clicking a toast brings the DSH window forward."
+}

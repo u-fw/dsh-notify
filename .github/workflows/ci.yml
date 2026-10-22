@@ -1,0 +1,27 @@
+# The plugin posts Windows toasts and probes the foreground window through Win32,
+# so the suite only means anything on Windows: `resolveIcon` rejects a Windows
+# path on POSIX (correctly, as a relative path) and the harness would find no
+# PowerShell to probe.
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      # `@deepseek-ai/schemastery` is a real dependency: a bundle installed with
+      # `link:` resolves it from its own directory, because DSH's copy lives inside
+      # the installation and is not on that path.
+      - run: npm install --no-audit --no-fund
+      - run: node --check lib/index.js
+      - run: node --test
+      - run: node tools/lint.mjs
+      # Dry mode asserts every payload without putting toasts on a desktop.
+      - run: node tools/verify-live.mjs --dry

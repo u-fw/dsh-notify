@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="DSH notifications">
+  <rect width="64" height="64" rx="15" fill="#101828"/>
+  <path d="M32 12a13.5 13.5 0 0 0-13.5 13.5v7.9l-3.2 5.6a2 2 0 0 0 1.7 3h30a2 2 0 0 0 1.7-3l-3.2-5.6v-7.9A13.5 13.5 0 0 0 32 12Z" fill="#4C8DFF"/>
+  <path d="M26.4 45.4a5.6 5.6 0 0 0 11.2 0Z" fill="#8AB4FF"/>
+  <circle cx="46" cy="18" r="7" fill="#F97066"/>
+</svg>

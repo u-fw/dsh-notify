@@ -1,0 +1,8 @@
+# Normalize line endings on commit so the repository stays LF-only regardless of
+# the contributor's platform.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.webp binary
+*.ico binary

@@ -1,0 +1,79 @@
+{
+  "name": "dsh-notify",
+  "version": "0.1.0",
+  "description": "Windows 11 toast notifications for DeepSeek Harness: approvals, questions, errors, finished turns, and work that stopped making progress",
+  "type": "module",
+  "main": "lib/index.js",
+  "scripts": {
+    "test": "node --test",
+    "lint": "node tools/lint.mjs",
+    "verify:live": "node tools/verify-live.mjs",
+    "verify:dry": "node tools/verify-live.mjs --dry",
+    "check": "node --check lib/index.js && node --test && node tools/lint.mjs && node tools/verify-live.mjs --dry"
+  },
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json"
+  },
+  "files": [
+    "lib",
+    "locale",
+    "test",
+    "tools",
+    "icon.svg",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "dsh-bundle",
+    "notification",
+    "toast",
+    "windows",
+    "windows-11"
+  ],
+  "homepage": "https://github.com/u-fw/dsh-notify#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/u-fw/dsh-notify.git"
+  },
+  "bugs": {
+    "url": "https://github.com/u-fw/dsh-notify/issues"
+  },
+  "author": "u-fw",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.15"
+  },
+  "icon": "./icon.svg",
+  "meta": {
+    "title": "DSH Notify",
+    "description": "Windows 11 toast notifications when DeepSeek Harness needs an approval or an answer, hits an error, finishes a turn, or stops making progress. Clicking a toast brings the DSH window forward."
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-plugin-manager"
+      ]
+    }
+  },
+  "dependencies": {
+    "@deepseek-ai/schemastery": "3.18.4"
+  },
+  "devDependencies": {
+    "jsdom": "^30.1.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  }
+}

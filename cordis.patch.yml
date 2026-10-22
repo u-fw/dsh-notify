@@ -1,0 +1,45 @@
+# dsh-notify — the bundle's patch layer.
+#
+# One row. Every value below is a default; delete a line to fall back to it, and
+# see README.md for the complete list of knobs.
+- insert:
+    - id: dsh-notify
+      name: dsh-notify
+      config:
+        enabled: true
+        # Windows shows this name above the toast and in Action Center.
+        displayName: DeepSeek Harness
+        # Toast identity. The Desktop app ships `com.deepseek.dsh`, and the
+        # plugin registers the half of it that the installer leaves out.
+        appId: com.deepseek.dsh
+        registerAppId: true
+        # `auto` probes Windows PowerShell, then pwsh. See README for why
+        # PowerShell 7 cannot post a toast.
+        shell: auto
+        # Clicking a toast body opens this URI. `dsh://open` is the only value
+        # the Desktop shell recognises; it raises the primary window and does
+        # not navigate to the session that raised the toast.
+        openUri: dsh://open
+        locale: zh
+
+        # What is worth interrupting you for. The default policy is "only what
+        # needs me": a turn blocked on an approval, a question, or a failure.
+        notifyOnApproval: true
+        notifyOnQuestion: true
+        notifyOnError: true
+        notifyOnAccount: true
+        # Off by default. Turn both on to also hear that a long turn finished,
+        # and that a running turn stopped making progress.
+        notifyOnIdle: false
+        notifyOnStall: false
+        notifyOnWorkflowEnd: false
+        includeSubagents: false
+
+        # A turn shorter than this finishes without a completion toast.
+        # Only consulted while notifyOnIdle is on.
+        minRunSeconds: 20
+        # A running turn silent for this long gets one "may be stuck" hint.
+        # Raise it above your longest legitimate tool call or model wait.
+        # Only consulted while notifyOnStall is on.
+        stallSeconds: 240
+        stallCheckSeconds: 15

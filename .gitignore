@@ -1,0 +1,6 @@
+# Dependencies and build output
+node_modules/
+pnpm-lock.yaml
+
+# Local scratch: probe scripts and notes that hold this machine's paths.
+.dsh-scratch/
