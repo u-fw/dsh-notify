@@ -252,3 +252,61 @@ test('regValue tolerates values that contain spaces', () => {
   const output = '    DisplayName    REG_SZ    DeepSeek  Harness \r\n'
   assert.equal(regValue(output, 'DisplayName'), 'DeepSeek  Harness')
 })
+
+// ---- Volatile configuration references ---------------------------------------
+
+/** Stand-in for the loader's volatile reference: live config wraps `.volatile()`. */
+const ref = (value) => ({ get: () => value })
+
+test('a volatile reference is read through its getter', () => {
+  // The loader keeps a reference object in the live config and mutates it in place so
+  // an edit applies without remounting. Comparing the reference itself against a value
+  // silently disabled every setting: booleans read false, numbers fell back, and the
+  // plugin looked configured while ignoring all of it.
+  const config = resolveConfig({
+    notifyOnApproval: ref(true),
+    notifyOnIdle: ref(true),
+    minRunSeconds: ref(45),
+    stallSeconds: ref(90),
+    locale: ref('en'),
+    sounds: ref({ approval: 'alarm' }),
+    durations: ref({ error: 'long' }),
+  })
+
+  const baseline = resolveConfig({})
+  assert.equal(config.notifyOnApproval, true)
+  assert.equal(config.notifyOnIdle, true)
+  assert.equal(config.minRunSeconds, 45)
+  assert.equal(config.stallSeconds, 90)
+  assert.equal(config.messages.approval.title.length > 0, true)
+  assert.equal(config.sounds.approval, 'alarm')
+  // Unspecified entries still come from the shipped defaults.
+  assert.equal(config.sounds.error, baseline.sounds.error)
+  assert.equal(config.durations.error, 'long')
+})
+
+test('a plain value and a reference produce the same result', () => {
+  const plain = resolveConfig({ notifyOnApproval: true, minRunSeconds: 7 })
+  const wrapped = resolveConfig({ notifyOnApproval: ref(true), minRunSeconds: ref(7) })
+  assert.equal(plain.notifyOnApproval, wrapped.notifyOnApproval)
+  assert.equal(plain.minRunSeconds, wrapped.minRunSeconds)
+})
+
+test('a reference that throws falls back instead of breaking activation', () => {
+  const hostile = {
+    notifyOnApproval: {
+      get() {
+        throw new Error('disposed reference')
+      },
+    },
+    minRunSeconds: {
+      get() {
+        throw new Error('disposed reference')
+      },
+    },
+  }
+  const config = resolveConfig(hostile)
+  const baseline = resolveConfig({})
+  assert.equal(config.notifyOnApproval, baseline.notifyOnApproval)
+  assert.equal(config.minRunSeconds, baseline.minRunSeconds)
+})
