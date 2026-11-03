@@ -12,6 +12,17 @@ All notable changes to this project are documented here. The format follows
   policy leaves half-served: a long turn you walked away from. It names the smallest set
   of changes, the tradeoff behind each value, and the fact that a value set in the panel
   shadows the shipped default from then on.
+- `skipped` in the transport report: toasts the focus gate suppressed, counted apart from
+  `shown` and `failed` because they are neither. `delivery skipped-focused` joins the
+  trace beside the other delivery decisions.
+- A harness scenario that drives the focus-suppressed path, so the accounting cannot
+  silently regress.
+
+### Fixed
+
+- A draw the focus gate suppressed exits 0 without drawing, and was being counted as
+  shown. The report could therefore claim notifications that were deliberately skipped —
+  the same class of confusion as a healthy-looking plugin that notifies nobody.
 
 ## [0.1.0] — 2026-11-03
 

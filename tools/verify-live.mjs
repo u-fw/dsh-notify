@@ -33,10 +33,13 @@ const require = createRequire(import.meta.url)
 const childProcess = require('node:child_process')
 const realSpawn = childProcess.spawn
 const posted = []
+/** When on, the fake renderer answers the way a focus-suppressed draw does. */
+let answerFocused = false
 
 childProcess.spawn = (command, args, options) => {
   const index = Array.isArray(args) ? args.indexOf('-PayloadB64') : -1
-  if (index !== -1) posted.push(JSON.parse(Buffer.from(args[index + 1], 'base64').toString('utf8')))
+  const payload = index === -1 ? undefined : JSON.parse(Buffer.from(args[index + 1], 'base64').toString('utf8'))
+  if (payload !== undefined) posted.push(payload)
   if (!dry) return realSpawn(command, args, options)
   // A dry run still drives the queue, the tag coalescing, and the payload build;
   // it only replaces the process that would draw the toast.
@@ -44,7 +47,13 @@ childProcess.spawn = (command, args, options) => {
   child.stdout = new PassThrough()
   child.stderr = new PassThrough()
   child.kill = () => {}
-  setImmediate(() => child.emit('close', 0))
+  // The real script exits 0 both when it drew and when the focus gate told it to stay
+  // quiet, so the fake has to model both or the accounting goes untested.
+  const suppressed = answerFocused && payload?.skipWhenFocused !== undefined
+  setImmediate(() => {
+    if (suppressed) child.stdout.write('focused\n')
+    setImmediate(() => child.emit('close', 0))
+  })
   return child
 }
 
@@ -447,6 +456,28 @@ check('/notify unmute restores notifications',
 
 check('/notify rejects an unknown subcommand with usage',
   command.handler({ rawInput: 'nonsense' }).kind === 'error')
+
+// A draw the focus gate suppresses exits 0 without drawing. Counting it as "shown" made
+// the report claim toasts that were deliberately skipped, which is the same class of
+// confusion as reporting a healthy plugin that notifies nobody.
+const readCount = (key) => {
+  const match = new RegExp(`"${key}":(\\d+)`).exec(String(command.handler({ rawInput: 'status' }).text))
+  return match === null ? -1 : Number(match[1])
+}
+answerFocused = true
+// Drain whatever the previous step left in flight: `posted` grows synchronously but a
+// draw settles a tick later, and a straggler would land inside this window.
+await sleep(120)
+const skippedBefore = readCount('skipped')
+const shownBefore = readCount('shown')
+await emit('agent/error', { agent: { id: 'session-focus' }, error: new Error('焦点期间应被抑制') })
+await sleep(80)
+const skippedAfter = readCount('skipped')
+const shownAfter = readCount('shown')
+check('a toast the focus gate suppresses counts as skipped, not shown',
+  skippedAfter === skippedBefore + 1 && shownAfter === shownBefore,
+  `skipped ${String(skippedBefore)}->${String(skippedAfter)}, shown ${String(shownBefore)}->${String(shownAfter)}`)
+answerFocused = false
 
 const failed = results.filter((entry) => !entry.ok)
 console.log(`\n${results.length - failed.length}/${results.length} checks passed`)
