@@ -111,7 +111,26 @@ if ($payload.focusCheck) {
         $cursor = [int]$parent
       }
     }
-    Write-Output (ConvertTo-Json -InputObject ([ordered]@{ foreground = $foreground; matches = $matches; ancestors = $ancestors }) -Compress)
+    # Report the shell's notification policy alongside the focus answer, because a toast
+    # the system suppresses looks exactly like a plugin that never posted one. Reading it
+    # here costs no extra process and makes that difference visible in the trace.
+    $notifications = [ordered]@{ global = $null; app = $null }
+    try {
+      $settingsKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Notifications\Settings'
+      $globalValue = (Get-ItemProperty $settingsKey -ErrorAction SilentlyContinue).NOC_GLOBAL_SETTING_TOASTS_ENABLED
+      if ($null -eq $globalValue) {
+        $globalValue = (Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\PushNotifications' -ErrorAction SilentlyContinue).ToastEnabled
+      }
+      if ($null -ne $globalValue) { $notifications.global = ([int]$globalValue -ne 0) }
+      $policyAppId = [string]$payload.appId
+      if (-not [string]::IsNullOrWhiteSpace($policyAppId)) {
+        $appValue = (Get-ItemProperty "$settingsKey\$policyAppId" -ErrorAction SilentlyContinue).Enabled
+        if ($null -ne $appValue) { $notifications.app = ([int]$appValue -ne 0) }
+      }
+    } catch {
+      # A policy that cannot be read stays unknown rather than being reported as off.
+    }
+    Write-Output (ConvertTo-Json -InputObject ([ordered]@{ foreground = $foreground; matches = $matches; ancestors = $ancestors; notifications = $notifications }) -Compress)
     exit 0
   } catch {
     Fail 2 "focus check failed: $($_.Exception.Message)"

@@ -310,3 +310,26 @@ test('a reference that throws falls back instead of breaking activation', () => 
   assert.equal(config.notifyOnApproval, baseline.notifyOnApproval)
   assert.equal(config.minRunSeconds, baseline.minRunSeconds)
 })
+
+test('repeatGuardSeconds floors at zero and falls back when unusable', () => {
+  // Activation-decided rather than volatile, so it is read once and cannot be changed
+  // from the settings page. `0` means "no guard" and must survive; a negative value is
+  // nonsense rather than "less than no guard", so it falls back like any unusable entry.
+  const baseline = resolveConfig({})
+  assert.equal(baseline.repeatGuardSeconds, 15)
+  assert.equal(resolveConfig({ repeatGuardSeconds: 0 }).repeatGuardSeconds, 0)
+  assert.equal(resolveConfig({ repeatGuardSeconds: -5 }).repeatGuardSeconds, baseline.repeatGuardSeconds)
+  assert.equal(resolveConfig({ repeatGuardSeconds: 45 }).repeatGuardSeconds, 45)
+  assert.equal(resolveConfig({ repeatGuardSeconds: 'x' }).repeatGuardSeconds, baseline.repeatGuardSeconds)
+})
+
+test('every locale names the plan-review title', () => {
+  // A plan review is a decision to approve a plan, not one option among several; the
+  // title is what tells the two apart on a toast, so both locales must carry it.
+  for (const locale of ['zh', 'en']) {
+    const title = resolveConfig({ locale }).messages.question.planTitle
+    assert.equal(typeof title, 'string', locale)
+    assert.ok(title.length > 0, locale)
+    assert.notEqual(title, resolveConfig({ locale }).messages.question.title, locale)
+  }
+})
