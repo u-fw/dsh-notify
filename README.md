@@ -412,6 +412,19 @@ The failure mode of a notification plugin is silence, so activation is traced to
 `%TEMP%\dsh-notify-trace.log` (`$TMPDIR` elsewhere). The trace is bounded, synchronous,
 and cannot throw into the plugin.
 
+Two listeners observe **waterfalls** (`approval/request`, `user-questions/request`)
+because those are the only signals those services publish — neither emits a companion
+event. A waterfall ends the moment any listener *claims* the request by returning an
+answer instead of calling `next()`, and the answering listener is the browser UI,
+registered through `ctx.remote.$on` when a page connects. An observer appended after it
+therefore never runs, which looks exactly like a plugin that is active and quiet.
+
+Both observers are registered with `prepend` for that reason. Do not remove it: the
+notification must not depend on which listener answers or on when a page happened to
+connect. The trace records every listener entry, and `agent/status` — an emit event no
+listener can claim — is traced as a control, so "dispatch never arrives" stays
+distinguishable from "this chain terminated early".
+
 | Last trace line | Meaning |
 |---|---|
 | none at all | the module never activated |
