@@ -289,7 +289,7 @@ only authority on acceptance, so the outcome is read back from the scope.
 
 Fields the plugin reads at *use* time are editable live. Fields decided at
 activation — `focusPid`, `stallCheckSeconds`, `maxInFlight`, `timeoutMs`,
-`selfTest` — are marked **（需重载）** in the page and stay file-only, because
+`repeatGuardSeconds`, `selfTest` — are marked **（需重载）** in the page and stay file-only, because
 promising a live edit for them would be a lie.
 
 Two things it depends on:
@@ -346,6 +346,7 @@ activation-time fields.
 | `minRunSeconds` | `20` | Shorter turns finish without a toast. |
 | `stallSeconds` | `240` | Silence on a running turn before the stall hint. |
 | `stallCheckSeconds` | `15` | Watchdog sampling period. |
+| `repeatGuardSeconds` | `15` | Shortest interval between two notifications filed under the same tag. Keeps a failing turn from flashing a banner on every retry; `0` disables it. Blocking requests are exempt. |
 | `sounds` | per category | `default`, `silent`, `alarm`, `im`, `mail`, `reminder`. |
 | `durations` | per category | `short` or `long`. |
 | `maxInFlight` | `3` | Concurrent toast processes; the rest queue. |
@@ -354,18 +355,24 @@ activation-time fields.
 
 ## What counts as progress
 
-Only relevant while `notifyOnStall` is on. The watchdog treats three things as
-proof that a turn is alive: live assistant tokens (`agent/assistant-stream`),
-committed session events (`session/event`), and status transitions. A single long
-tool call emits none of them, so the hint is worded as *no observable progress*
-rather than as a failure. Raise `stallSeconds` above your longest legitimate tool
-call or model wait to keep it quiet.
+Only relevant while `notifyOnStall` is on. The watchdog treats four things as proof that
+a turn is alive: live assistant tokens (`agent/assistant-stream`), committed session
+events (`session/event`), status transitions, and an **outstanding tool call**. The last
+one is counted from the `tool/call` and `tool/result` records in the session log, and it
+is what stops a ten-minute command from looking stuck: while a call is in flight the hint
+is suppressed entirely, and any `step/end` or `turn/end` resets the count so an
+interrupted call cannot silence the hint forever.
+
+The wording is still *no observable progress* rather than a failure, and a model wait
+longer than `stallSeconds` still triggers it — raise `stallSeconds` above your longest
+legitimate model wait.
 
 ## Verifying a change
 
 | Layer | Command | What it proves |
 |---|---|---|
 | Unit | `npm test` | Pure logic (`test/pure.test.mjs`): tags, labels, durations, config floors, live volatility, registry parsing |
+| Renderer | `npm test` | The renderer script itself (`test/toast-script.test.mjs`): readiness without drawing, the focus/policy answer, a missing title, a malformed payload |
 | Render | `npm test` | The browser half renders (`test/client.test.mjs`): the module registers under its slot key, the page renders in real React without throwing, and every string resolves in both locales |
 | Writes | `npm test` | The browser half edits (`test/client-dom.test.mjs`): in a real DOM, a control writes the op the scope expects — `{op:'set',path:[field],value}` or `{op:'unset'}` — carrying the revision it read, refusing an invalid draft, and reporting a write the Host declined |
 | Consistency | `npm run lint` | The defaults, the settings schema, the volatile declarations, and the table above all describe the same keys; the page's styles use theme tokens only |

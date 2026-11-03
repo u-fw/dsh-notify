@@ -168,7 +168,7 @@ Remove-Item 'HKCU:\Software\Classes\AppUserModelId\com.deepseek.dsh' -Recurse
 
 写入是即时的：一个控件、一次编辑、一次携带所读 `revision` 的 `scope.mutate`，所以过期的写入会被拒绝而不是覆盖别人。宿主是"是否被接受"的唯一权威，因此结果是从 scope 读回来的。
 
-插件在**使用时**读取的字段可以实时编辑。在激活时决定的字段 —— `focusPid`、`stallCheckSeconds`、`maxInFlight`、`timeoutMs`、`selfTest` —— 在页面上标为**（需重载）**并且只能改文件，因为对它们承诺实时生效等于说谎。
+插件在**使用时**读取的字段可以实时编辑。在激活时决定的字段 —— `focusPid`、`stallCheckSeconds`、`maxInFlight`、`timeoutMs`、`repeatGuardSeconds`、`selfTest` —— 在页面上标为**（需重载）**并且只能改文件，因为对它们承诺实时生效等于说谎。
 
 它依赖两件事：
 
@@ -210,6 +210,7 @@ Remove-Item 'HKCU:\Software\Classes\AppUserModelId\com.deepseek.dsh' -Recurse
 | `minRunSeconds` | `20` | 更短的回合不报完成。 |
 | `stallSeconds` | `240` | 运行中回合的静默时长阈值。 |
 | `stallCheckSeconds` | `15` | 看门狗采样周期。 |
+| `repeatGuardSeconds` | `15` | 同一个 tag 下两条通知的最短间隔。防止一个不断重试的失败回合反复弹横幅；`0` 表示不限制。阻断类请求不受影响。 |
 | `sounds` | 按类别 | `default`、`silent`、`alarm`、`im`、`mail`、`reminder`。 |
 | `durations` | 按类别 | `short` 或 `long`。 |
 | `maxInFlight` | `3` | 并发的通知进程数，其余排队。 |
@@ -218,13 +219,16 @@ Remove-Item 'HKCU:\Software\Classes\AppUserModelId\com.deepseek.dsh' -Recurse
 
 ## 什么算作"有进展"
 
-仅在 `notifyOnStall` 开启时相关。看门狗把三件事当作回合仍存活的证据：实时的 assistant token（`agent/assistant-stream`）、已提交的会话事件（`session/event`）、以及状态跃迁。**一次长时间的工具调用三者都不会产生**，所以这条提示的措辞是*无可观测进展*，而不是"出错"。把 `stallSeconds` 设得比最长正常工具调用或模型等待更长，就能让它保持安静。
+仅在 `notifyOnStall` 开启时相关。看门狗把四件事当作回合仍存活的证据：实时的 assistant token（`agent/assistant-stream`）、已提交的会话事件（`session/event`）、状态跃迁，以及**正在进行中的工具调用**。最后一项来自会话日志里的 `tool/call` 与 `tool/result` 记录，正是它让一个跑十分钟的命令不再显得"卡住"：只要还有调用在飞，提示就完全抑制；而任何 `step/end` 或 `turn/end` 会把计数归零，所以一次被中断的调用不会永久堵住这个提示。
+
+措辞仍然是*无可观测进展*而不是"出错"，等待模型超过 `stallSeconds` 依然会触发 —— 把 `stallSeconds` 设得比最长正常模型等待更长即可。
 
 ## 验证一次改动
 
 | 层 | 命令 | 证明什么 |
 |---|---|---|
 | 单元 | `npm test` | 纯逻辑（`test/pure.test.mjs`）：tag、标签、时长、配置下限、活值语义、注册表解析 |
+| 渲染脚本 | `npm test` | `lib/toast.ps1` 本身（`test/toast-script.test.mjs`）：就绪探测不画任何东西、焦点与策略答案、缺标题、非法载荷 |
 | 渲染 | `npm test` | 浏览器半边能渲染（`test/client.test.mjs`）：模块以自己的槽位 key 注册、页面在真实 React 下不抛异常、两种语言下每个字符串都能解析 |
 | 写入 | `npm test` | 浏览器半边能编辑（`test/client-dom.test.mjs`）：在真实 DOM 里，控件写出的 op 是 scope 期望的形状 —— `{op:'set',path:[field],value}` 或 `{op:'unset'}` —— 携带它读到的 revision，拒绝非法草稿，并上报宿主拒绝的写入 |
 | 一致性 | `npm run lint` | 默认值、设置 schema、volatile 声明、以及上表描述的是同一批键；页面样式只用主题 token |
