@@ -4,6 +4,15 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- A **Recommended configuration** section in both READMEs, for the case the shipped
+  policy leaves half-served: a long turn you walked away from. It names the smallest set
+  of changes, the tradeoff behind each value, and the fact that a value set in the panel
+  shadows the shipped default from then on.
+
 ## [0.1.0] — 2026-11-03
 
 First release. Windows 11 toast notifications for the DeepSeek Harness events that block

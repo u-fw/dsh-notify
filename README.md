@@ -58,6 +58,37 @@ The nudge re-draws the same toast with a `reminder` sound and a "仍未处理" t
 so Action Center still holds exactly one entry for that request rather than
 accumulating reminders.
 
+If that floor is too quiet for how you work, [Recommended
+configuration](#recommended-configuration) is the smallest set of changes that closes the
+gap, with the tradeoff for each one.
+
+## Recommended configuration
+
+The shipped defaults are deliberately quiet: only work blocked on you interrupts. That is
+the right floor, but it only solves half the problem — a long turn you walked away from
+still tells you nothing until it needs you. These values close that gap, with the reason
+for each one.
+
+| Key | Value | Why |
+|---|---|---|
+| `progressAfterSeconds` | `120` | A turn running past two minutes announces that it is still running, with live elapsed time and an indeterminate bar. This is the only signal that keeps *working* and *hung* distinguishable while you are elsewhere. The focus gate applies to it, so it does not nag you from the same screen. |
+| `escalateAfterSeconds` | `120` | A blocking toast nobody answers is re-drawn once as **仍未处理** with a `reminder` sound. Forgetting a pending request is the exact failure this plugin exists for, and the re-draw replaces the toast instead of adding one. |
+| `quietWhenFocused` | `true` (shipped) | Stay quiet while the DSH window owns the foreground. The probe is proved at activation and fails open, so a broken probe can only produce extra toasts, never silence. |
+| `minRunSeconds` | `60` | The completion toast is gated on how long the turn ran. `20` fires for almost everything, `240` for almost nothing. A minute is roughly the point where a turn is one you plausibly left. |
+| `notifyOnStall` | `false` (shipped) | The watchdog reports *no observable progress*, not an error, and it still cannot see inside a model wait. `progressAfterSeconds` serves the same need without that ambiguity; turn this on only if you want the explicit "may be stuck" wording. |
+
+Apply these by editing the plugin row's `config` in the profile patch, or by changing the
+volatile ones in the sidebar panel (no restart needed). For volatile keys the **panel is
+authoritative**: a value set there is written to the profile and shadows the bundle's
+shipped default from that point on, so a later default change will not reach you until you
+reset that key.
+
+```yaml
+progressAfterSeconds: 120
+escalateAfterSeconds: 120
+minRunSeconds: 60
+```
+
 ## Commands
 
 ```
