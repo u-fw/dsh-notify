@@ -267,6 +267,14 @@ make this page real:
   The matching live readers are the `VOLATILE_SPECS` table; `npm run lint` checks
   the two agree in both directions, because a declared-but-frozen field promises an
   edit that never lands and a live reader without the declaration is never offered.
+  **Read them through `unwrapVolatile()`.** A volatile field does not arrive at `apply`
+  as its value: the loader keeps a reference object in the live config and mutates it in
+  place, which is what lets an edit apply without remounting — `dsh-settings` reads them
+  as `value.get()` for the same reason. Comparing the reference directly against a value
+  fails silently in the worst way: every boolean reads `false`, every number falls back
+  to its default, and the plugin looks correctly configured while ignoring all of its
+  settings. That failure registers no listeners at all, so it presents as a plugin that
+  is active, healthy, and completely silent.
 - **`configure({ auto: false }, ctx.fiber)`**, declared through an optional
   `ctx.inject(['settings'], …)` child, so the Host does not also try to generate a
   page and the plugin still runs in a profile with no Settings service.
